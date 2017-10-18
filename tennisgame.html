@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<title></title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="manifest" href="site.webmanifest">
+	<link rel="apple-touch-icon" href="icon.png">
+	<!-- Place favicon.ico in the root directory -->
+	<link rel="stylesheet" type="text/css" href="/home/jonne/Documents/Portfolio_BS/bower_components/bootstrap/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/normalize.css">
+	<link rel="stylesheet" href="css/style.css">
+
+
+
+</head>
+<body>
+
+<!--[if lte IE 9]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+        <![endif]-->
+
+        <!-- Add your site or application content here -->
+        <nav class="navbar">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="index.html">Jonne Vähänissi</a>
+                </div>
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="portfolio.html">Portfolio</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <!-- /.navbar-collapse -->
+            </div>
+            <!-- /.container-fluid -->
+        </nav>
+
+		<center><p><b>I'll see you again 25 years. Meanwhile...</b><p></center>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+	
+</body>
+
+
+<script>
+	var canvas;
+	var canvasContext;
+	var ballX = 50;
+	var ballY = 50;
+	var ballSpeedX = 10;
+	var ballSpeedY = 4;
+
+	var player1Score = 0;
+	var player2Score = 0;
+	const WINNING_SCORE = 3;
+
+	var showingWinScreen = false;
+	var showingStartingScreen = false;
+
+	var paddle1Y = 250;
+	var paddle2Y = 250;
+	const PADDLE_HEIGHT = 100;
+	const PADDLE_THICKNESS = 10;
+
+	function calculateMousePos(evt){
+		var rect = canvas.getBoundingClientRect();
+		var root = document.documentElement;
+		var mouseX = evt.clientX - rect.left - root.scrollLeft;
+		var mouseY = evt.clientY - rect.top - root.scrollTop;
+		return{
+			x:mouseX,
+			y:mouseY
+		};
+	}
+
+	function handleMouseClick(evt){
+		if(showingWinScreen){
+			player1Score = 0;
+			player2Score = 0;
+			showingWinScreen = false;
+		}
+	}
+
+	window.onload = function(){
+		canvas = document.getElementById('gameCanvas');
+		canvasContext = canvas.getContext('2d');
+		
+		var framesPerSecond = 30;
+		setInterval(function(){
+						moveEverything();
+						drawEverything();
+			}, 1000/framesPerSecond);
+		
+		canvas.addEventListener('mousedown',handleMouseClick);
+
+		canvas.addEventListener('mousemove',
+				function(evt){
+					var mousePos = calculateMousePos(evt);
+					paddle1Y = mousePos.y-(PADDLE_HEIGHT/2);
+				});
+	}
+
+	function ballReset(){
+		if(player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE){
+			showingWinScreen = true;
+		}
+		ballSpeedX = -ballSpeedX;
+		ballX = canvas.width/2;
+		ballY = canvas.height/2;
+	}
+
+	function computerMovement(){
+		var paddle2YCenter = paddle2Y + (PADDLE_HEIGHT/2)
+		if(paddle2YCenter < ballY - 35){
+			paddle2Y += 7;
+		}
+		else if(paddle2YCenter > ballY + 35){
+			paddle2Y -= 7;
+		}
+	}
+
+	function moveEverything(){
+		if(showingWinScreen){
+			return;
+		}
+		computerMovement();
+
+		ballX += ballSpeedX;
+		ballY += ballSpeedY;
+
+		if(ballX < 0){
+			if(ballY > paddle1Y && ballY < paddle1Y+PADDLE_HEIGHT){
+				ballSpeedX = -ballSpeedX;
+
+				var deltaY = ballY - (paddle1Y + PADDLE_HEIGHT/2);
+				ballSpeedY = deltaY * 0.10;
+			}
+			else{
+				player2Score += 1;
+				ballReset();
+			}
+		}
+		if(ballX > canvas.width){
+			if(ballY > paddle2Y && ballY < paddle2Y+PADDLE_HEIGHT){
+				ballSpeedX = -ballSpeedX;
+				var deltaY = ballY - (paddle2Y + PADDLE_HEIGHT/2);
+				ballSpeedY = deltaY * 0.10;
+			}
+			else{
+				player1Score += 1;
+				ballReset();
+			}
+		}
+		ballY = ballY + ballSpeedY;
+		if(ballY < 0){
+			ballSpeedY = -ballSpeedY;
+		}
+		if(ballY > canvas.height){
+			ballSpeedY = -ballSpeedY;
+		}
+	}
+
+	function drawNet(){
+		for(var i = 0; i < canvas.height; i += 40){
+			colorRect(canvas.width/2-1,i,2,20,'white');
+		}
+	}
+
+	function drawEverything(){
+
+		colorRect(0,0,canvas.width,canvas.height,'black'); //y-axis > 0 down
+
+		if(showingWinScreen){
+			canvasContext.fillStyle = 'white';
+			
+			if(player1Score >= WINNING_SCORE){
+				canvasContext.fillText("Left Player Won!", 200,200)
+			}
+			else if(player2Score >= WINNING_SCORE){
+				canvasContext.fillText("Right Player Won!", 200,200)	
+			}
+			canvasContext.fillText("click to continue", 200,220)
+		}
+		drawNet();
+		//left player paddle
+		colorRect(0,paddle1Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'white');
+		//computer paddle
+		colorRect(canvas.width-PADDLE_THICKNESS,paddle2Y,PADDLE_THICKNESS,PADDLE_HEIGHT,'white');
+		//ball
+		colorCircle(ballX, ballY, 10, 'white');
+
+		canvasContext.fillText(player1Score, 300, 50);
+		canvasContext.fillText(player2Score, canvas.width-300,50);
+
+	}
+
+	function colorCircle(centerX, centerY, radius, drawColor){
+		canvasContext.fillStyle = 'white';
+		canvasContext.beginPath();
+		canvasContext.arc(centerX,centerY,radius,0, Math.PI*2, true);
+		canvasContext.fill();
+
+	}
+
+	function colorRect(leftX, topY, width, height, drawColor){
+		canvasContext.fillStyle = drawColor;
+		canvasContext.fillRect(leftX, topY, width, height)
+
+	}
+
+</script>
+
+</html>
